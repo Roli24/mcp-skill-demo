@@ -9,7 +9,11 @@ working together in Claude Code.
   "search users" endpoint. It contains a deliberate SQL-injection bug,
   used to show the **`pr-review` skill** (see
   [`.claude/skills/pr-review/SKILL.md`](./.claude/skills/pr-review/SKILL.md))
-  catching it, with the **GitHub MCP server** supplying Claude live PR/CI
-  context and posting findings back.
+  catching it.
+- **`mcp-server/`** — a small custom MCP server ([`server.py`](./mcp-server/server.py))
+  that runs locally and talks to `api.github.com` directly, exposing just
+  three tools (`get_pr_diff`, `get_pr_checks`, `post_review_comment`).
+  Your GitHub token stays in this process — it's never sent to a
+  third-party hosted MCP endpoint.
 
 See [`RUNBOOK.md`](./RUNBOOK.md) for the exact steps to record.

@@ -37,31 +37,50 @@ Note the PR number `gh pr create` prints (e.g. `#1`) — you'll say it on camera
 
 ---
 
-## Step 3 — Connect the GitHub MCP server (ON CAMERA)
+## Step 3 — Stand up your own MCP server, then connect it (ON CAMERA)
 
-Generate a fine-grained GitHub PAT first (Settings → Developer settings →
+We're deliberately *not* using GitHub's hosted MCP endpoint here — that
+would mean putting your PAT in an `Authorization` header sent to
+`api.githubcopilot.com` on every call. Instead `mcp-server/server.py` is
+~90 lines you can read end to end: it runs on your machine, calls
+`api.github.com` directly, and exposes exactly three tools
+(`get_pr_diff`, `get_pr_checks`, `post_review_comment`) — not GitHub's
+whole API surface. The token never leaves this process.
+
+```bash
+cd ~/mcp-skill-demo/mcp-server
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Generate a fine-grained GitHub PAT (Settings → Developer settings →
 Personal access tokens → Fine-grained), scoped to just this repo, with
-`Contents: Read`, `Pull requests: Read and write`, `Issues: Read`.
+`Contents: Read`, `Pull requests: Read and write`.
 **Redact this token in the recording** — either blur it or type it into an
 env var off-screen and reference `$GH_PAT` on screen instead.
 
 ```bash
 export GH_PAT="ghp_xxx"   # do this off camera / blur it
 
-claude mcp add --transport http github \
-  https://api.githubcopilot.com/mcp \
-  -H "Authorization: Bearer $GH_PAT"
+claude mcp add pr-github \
+  -e GH_PAT="$GH_PAT" \
+  -- python3 ~/mcp-skill-demo/mcp-server/server.py
 ```
 
-Verify it's connected:
+Verify it's connected, and that only your three tools are exposed:
 
 ```bash
 claude mcp list
 ```
 
-Talking point: *"This one command gave Claude a live connection to GitHub's
-API — it can now read issues, PRs, CI status, file contents, directly,
-without me copy-pasting anything into the chat."*
+Talking point: *"I'm not handing my GitHub token to someone else's
+server. This one is mine — three tools, ninety lines, running right
+here — and I can read exactly what it does before I trust it with a
+token."*
+
+> If `-e` doesn't stick on your Claude Code version, `export GH_PAT=...`
+> in the same shell before running `claude` and drop the `-e` flag —
+> the server reads it from its inherited environment either way.
 
 ## Step 4 — Ask Claude to pull PR context via MCP (ON CAMERA)
 
@@ -71,9 +90,11 @@ Inside `claude` (run it from `~/mcp-skill-demo`):
 what's the status of PR #1 in Roli24/mcp-skill-demo — show me the diff and any CI checks
 ```
 
-Claude uses the GitHub MCP server's tools to fetch the PR diff and CI status
-live — no local checkout needed. Narrate: *this is the "server" half of MCP —
-it's giving Claude eyes on GitHub's live data.*
+Claude calls `get_pr_diff` and `get_pr_checks` on the `pr-github` server —
+watch for the tool-call names in the transcript, that's the beat where you
+point out *these are the exact three tools we just wrote, nothing more*.
+Narrate: *this is the "server" half of MCP — it's giving Claude eyes on
+GitHub's live data, through code I control.*
 
 ## Step 5 — Run the pr-review skill against the PR (ON CAMERA)
 
@@ -98,18 +119,19 @@ Optional, if you want to show it posting back to GitHub:
 /pr-review PR #1 --comment
 ```
 
-Per the skill's step 4, this posts the findings as inline PR review
-comments using the *same* GitHub MCP connection from Step 3. This is the
-"end-to-end" beat: MCP supplied the live context in, the skill decided
-what to say, and the same server pushes the result back out — all inside
-one Claude Code session, no manual copy-paste either direction.
+Per the skill's step 4, this calls `post_review_comment` — the third
+tool — using the *same* local server from Step 3. This is the
+"end-to-end" beat: your MCP server supplied the live context in, the
+skill decided what to say, and the same server pushes the result back
+out — all inside one Claude Code session, no manual copy-paste either
+direction, and no token handed to anyone but GitHub itself.
 
 ---
 
 ## Cleanup after recording
 
 ```bash
-claude mcp remove github     # revoke the local MCP registration
+claude mcp remove pr-github     # revoke the local MCP registration
 ```
 
 Then go to GitHub → Settings → Developer settings → revoke the fine-grained

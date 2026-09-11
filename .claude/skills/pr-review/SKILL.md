@@ -5,21 +5,20 @@ description: Reviews an open GitHub pull request for correctness and security is
 
 # PR Security Review
 
-Orchestrates a GitHub MCP server and this checklist to review a pull
-request end to end: pull live context in, review it, optionally push
-findings back out. Invoked as `/pr-review <PR reference>`, e.g.
-`/pr-review PR #1` or `/pr-review PR #1 --comment`.
+Orchestrates the local `pr-github` MCP server and this checklist to
+review a pull request end to end: pull live context in, review it,
+optionally push findings back out. Invoked as `/pr-review <PR
+reference>`, e.g. `/pr-review PR #1` or `/pr-review PR #1 --comment`.
 
-## 1. Get live context via the GitHub MCP server
+## 1. Get live context via the pr-github MCP server
 
-Do not ask the user to paste a diff. Use the connected GitHub MCP
+Do not ask the user to paste a diff. Use the local `pr-github` MCP
 server's tools to fetch, for the referenced PR:
 
-- the full diff / changed files
-- the PR description and any prior review comments
-- the latest CI / check-run status
+- `get_pr_diff(owner, repo, pr_number)` — the full diff
+- `get_pr_checks(owner, repo, pr_number)` — the latest CI / check-run status
 
-If no GitHub MCP server is connected, say so and stop — this skill
+If the `pr-github` server isn't connected, say so and stop — this skill
 depends on it for live data, it does not work from memory or a stale
 local checkout.
 
@@ -52,6 +51,6 @@ merge the PR yourself — that decision stays with a human reviewer.
 
 ## 4. Post back to GitHub (only if asked, e.g. `--comment`)
 
-Use the GitHub MCP server's review-comment tool to post each finding
-as an inline comment on its diff line, then leave one top-level summary
-comment. Confirm in chat what was posted and a link to the PR.
+Call `post_review_comment(owner, repo, pr_number, path, line, body)`
+once per finding to leave an inline comment on its diff line. Confirm
+in chat what was posted, including the comment URL each call returns.
