@@ -13,9 +13,15 @@ Connector + Skill** working together end to end.
   - [`github_tools.py`](./mcp-server/github_tools.py) — the GitHub REST
     logic (`get_pr_diff`, `get_pr_checks`, `post_review_comment`).
   - [`remote_server.py`](./mcp-server/remote_server.py) — exposes those
-    three tools over Streamable HTTP, gated by its own bearer token
-    (`CONNECTOR_TOKEN`) that's separate from the GitHub token — claude.ai
-    only ever sees the former, never `GH_PAT`.
+    three tools over Streamable HTTP, behind its own single-tenant
+    OAuth 2.1 (authorization code + PKCE) authorization server —
+    claude.ai's custom-connector form expects Authorization/Token URLs
+    and a Client ID/Secret, not a plain bearer token, so that's what's
+    implemented. Three separate secrets keep the trust boundaries
+    apart: `GH_PAT` (never leaves the host), `OAUTH_CLIENT_SECRET`
+    (proves it's really claude.ai calling `/oauth/token`), and
+    `CONSENT_PASSWORD` (proves it's really you approving the connector
+    in your browser).
 
 See [`CLAUDE_AI_SETUP.md`](./CLAUDE_AI_SETUP.md) for the exact steps:
 push the repo, deploy the connector, add it and the skill to claude.ai,

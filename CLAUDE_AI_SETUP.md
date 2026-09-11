@@ -1,22 +1,23 @@
 # Connecting this demo to claude.ai (Connector + Skill)
 
-claude.ai runs in a browser, so it needs a server reachable over
-HTTPS — `mcp-server/remote_server.py` exposes three tools
-(`get_pr_diff`, `get_pr_checks`, `post_review_comment`) over Streamable
-HTTP for exactly that.
+claude.ai's **Add custom connector** form asks for an Authorization
+URL, Token URL, Client ID, and Client Secret — it does not offer a
+plain bearer-token field. `mcp-server/remote_server.py` implements a
+small, single-tenant OAuth 2.1 (authorization code + PKCE) server to
+match that, sitting in front of the same three tools
+(`get_pr_diff`, `get_pr_checks`, `post_review_comment`).
 
-Two independent secrets are involved. Keep them mentally separate:
+Three secrets, three separate jobs — don't conflate them:
 
-| Secret | What it's for | Who ever sees it |
+| Secret | Proves | Who ever sees it |
 |---|---|---|
-| `GH_PAT` | Talks to `api.github.com` | Only your deployed server's environment |
-| `CONNECTOR_TOKEN` | Gates every request to *your* server | You, and claude.ai's connector config |
+| `GH_PAT` | — (just used to call GitHub) | Only your deployed server's environment |
+| `OAUTH_CLIENT_SECRET` | It's really claude.ai calling `/oauth/token` | You (paste once into claude.ai's form) + your server |
+| `CONSENT_PASSWORD` | It's really you clicking "approve" in the browser | Only you, typed once during setup |
 
-claude.ai never receives `GH_PAT`. It only receives `CONNECTOR_TOKEN` —
-a secret that authenticates to your server, not to GitHub. If someone
-got hold of `CONNECTOR_TOKEN`, the worst they can do is call your three
-tools; they still can't do anything GitHub-side you haven't already
-scoped `GH_PAT` to allow.
+claude.ai never receives `GH_PAT` or `CONSENT_PASSWORD` — only
+`OAUTH_CLIENT_SECRET` (once, at setup) and the short-lived access/
+refresh tokens your server issues afterward.
 
 ## 0. Push the repo and open the demo PR
 
@@ -33,13 +34,11 @@ ticket — out of scope here." \
   --base main --head feature/admin-user-search
 ```
 
-Note the PR number `gh pr create` prints (e.g. `#1`) — that's what
-you'll reference later.
+Note the PR number `gh pr create` prints (e.g. `#1`).
 
-## 1. Deploy `remote_server.py` somewhere with a public URL
+## 1. Deploy `remote_server.py`
 
-Any host that runs a long-lived Python process works. Render's free
-tier is the least fuss for a demo:
+Render's free tier works for a demo:
 
 1. On [render.com](https://render.com): **New → Web Service** → connect
    `Roli24/mcp-skill-demo`.
@@ -47,31 +46,43 @@ tier is the least fuss for a demo:
    - **Root Directory**: `mcp-server`
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `python3 remote_server.py`
-3. Environment variables (Render's dashboard, not committed anywhere):
+3. Environment variables:
    - `GH_PAT` — your fine-grained GitHub PAT (`Contents: Read`,
      `Pull requests: Read and write`, scoped to this repo)
-   - `CONNECTOR_TOKEN` — generate one yourself: `openssl rand -hex 32`
-4. Deploy. Render gives you a URL like
-   `https://mcp-skill-demo.onrender.com`. Your MCP endpoint is that URL
-   plus `/mcp` — e.g. `https://mcp-skill-demo.onrender.com/mcp`.
+   - `OAUTH_CLIENT_SECRET` — generate: `openssl rand -hex 32`
+   - `CONSENT_PASSWORD` — generate: `openssl rand -hex 16`
+   - `PUBLIC_URL` — the URL Render assigns you, e.g.
+     `https://mcp-skill-demo.onrender.com` (you'll know this only
+     *after* the first deploy creates the service — update and
+     redeploy once you have it)
+   - `OAUTH_REDIRECT_URIS` — leave unset for the very first deploy;
+     you'll fill this in during Step 2 below and redeploy once more.
+4. Deploy. Confirm it's up:
+   ```bash
+   curl -i https://mcp-skill-demo.onrender.com/.well-known/oauth-authorization-server
+   # expect 200 + JSON, not a timeout/500
+   ```
 
-(Railway, Fly.io, or your own VPS work the same way — the only
-requirements are: run `remote_server.py`, set both env vars, terminate
-TLS in front of it.)
-
-Smoke-test it's alive before touching claude.ai:
-
-```bash
-curl -i https://mcp-skill-demo.onrender.com/mcp   # expect 401, not a timeout/500
-```
+(Any host that runs a long-lived Python process behind HTTPS works —
+Railway, Fly.io, your own VPS. Same env vars either way.)
 
 ## 2. Add it as a custom connector on claude.ai
 
 1. claude.ai → **Settings → Connectors → Add custom connector**.
-2. **URL**: `https://mcp-skill-demo.onrender.com/mcp`
-3. Auth: bearer token — paste your `CONNECTOR_TOKEN` value.
-4. Save, then confirm it shows connected and lists 3 tools
-   (`get_pr_diff`, `get_pr_checks`, `post_review_comment`).
+2. Fill in:
+   - **Authorization URL**: `https://mcp-skill-demo.onrender.com/oauth/authorize`
+   - **Token URL**: `https://mcp-skill-demo.onrender.com/oauth/token`
+   - **Client ID**: `pr-github-connector`
+   - **Client Secret**: your `OAUTH_CLIENT_SECRET` value
+   - **MCP server URL**: `https://mcp-skill-demo.onrender.com/mcp`
+3. claude.ai will show you the **redirect URI** it's going to use for
+   this connector. Copy it, set it as `OAUTH_REDIRECT_URIS` in your
+   host's env vars, and redeploy/restart the server — the
+   authorization step will reject the request until this matches.
+4. Click connect. You'll be sent to your server's consent page —
+   type in `CONSENT_PASSWORD` and approve.
+5. claude.ai should now show the connector as connected, listing 3
+   tools.
 
 ## 3. Upload the skill
 
@@ -83,8 +94,8 @@ curl -i https://mcp-skill-demo.onrender.com/mcp   # expect 401, not a timeout/50
 
 ## 4. Run it
 
-In a claude.ai chat, with the `pr-github` connector and `pr-review`
-skill both enabled:
+In a claude.ai chat, with the connector and `pr-review` skill both
+enabled:
 
 ```
 Review PR #1 in Roli24/mcp-skill-demo
@@ -92,17 +103,20 @@ Review PR #1 in Roli24/mcp-skill-demo
 
 Claude should call `get_pr_diff` / `get_pr_checks` on the connector,
 work through the skill's checklist, and report the SQL-injection and
-missing-auth-check findings in `app.py`'s `search_users()` endpoint. To
-see it close the loop, follow up with:
+missing-auth-check findings in `app.py`'s `search_users()` endpoint.
+Follow up with:
 
 ```
 Post those findings as review comments on the PR
 ```
 
+to see it call `post_review_comment` and close the loop.
+
 ## Cleanup after recording
 
-- Rotate/delete `CONNECTOR_TOKEN` on the host (or tear the service down
-  entirely if it was only for this recording).
+- Revoke/rotate `OAUTH_CLIENT_SECRET` and `CONSENT_PASSWORD` on the
+  host (or tear the service down entirely if it was only for this
+  recording).
 - Revoke the `GH_PAT` used here the same as you would after any demo.
 - Remove the connector from claude.ai settings if you don't intend to
   keep it running.
