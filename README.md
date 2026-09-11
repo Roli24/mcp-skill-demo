@@ -1,28 +1,25 @@
 # mcp-skill-demo
 
-A tiny storefront API used to record a YouTube demo of a **claude.ai
-Connector + Skill** working together end to end.
+A tiny storefront API used to record a YouTube demo of an **MCP server +
+Skill** working together end to end — shown two ways: locally in Claude
+Code, and remotely as a claude.ai connector.
 
 - **`main`** — a small Flask + SQLite API with a `/login` endpoint. Safe:
   the login query is parameterized.
 - **`feature/admin-user-search`** — a PR branch that adds an admin
   "search users" endpoint. It contains a deliberate SQL-injection bug,
   used to show the **`pr-review` skill** (see
-  [`skill/pr-review/SKILL.md`](./skill/pr-review/SKILL.md)) catching it.
-- **`mcp-server/`** — the connector's server code:
-  - [`github_tools.py`](./mcp-server/github_tools.py) — the GitHub REST
-    logic (`get_pr_diff`, `get_pr_checks`, `post_review_comment`).
-  - [`remote_server.py`](./mcp-server/remote_server.py) — exposes those
-    three tools over Streamable HTTP, behind its own single-tenant
-    OAuth 2.1 (authorization code + PKCE) authorization server —
-    claude.ai's custom-connector form expects Authorization/Token URLs
-    and a Client ID/Secret, not a plain bearer token, so that's what's
-    implemented. Three separate secrets keep the trust boundaries
-    apart: `GH_PAT` (never leaves the host), `OAUTH_CLIENT_SECRET`
-    (proves it's really claude.ai calling `/oauth/token`), and
-    `CONSENT_PASSWORD` (proves it's really you approving the connector
-    in your browser).
+  [`.claude/skills/pr-review/SKILL.md`](./.claude/skills/pr-review/SKILL.md))
+  catching it.
+- **`mcp-server/github_tools.py`** — the shared GitHub REST logic
+  (`get_pr_diff`, `get_pr_checks`, `post_review_comment`) used by both
+  servers below, so they can't drift into different behavior.
+  - **[`server.py`](./mcp-server/server.py)** — stdio transport, for
+    Claude Code. Runs on your machine via [`.mcp.json`](./.mcp.json);
+    your GitHub token never leaves this process. → [`RUNBOOK.md`](./RUNBOOK.md)
+  - **[`remote_server.py`](./mcp-server/remote_server.py)** — Streamable
+    HTTP transport with its own OAuth 2.1 authorization server, for a
+    claude.ai custom connector. → [`CLAUDE_AI_SETUP.md`](./CLAUDE_AI_SETUP.md)
 
-See [`CLAUDE_AI_SETUP.md`](./CLAUDE_AI_SETUP.md) for the exact steps:
-push the repo, deploy the connector, add it and the skill to claude.ai,
-and run the review.
+Pick whichever path matches what you're recording — both use the same
+`SKILL.md` and the same GitHub logic underneath.

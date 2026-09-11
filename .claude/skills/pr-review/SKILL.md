@@ -5,21 +5,20 @@ description: Reviews an open GitHub pull request for correctness and security is
 
 # PR Security Review
 
-Orchestrates the `pr-github` connector and this checklist to review a
+Orchestrates the `pr-github` MCP server and this checklist to review a
 pull request end to end: pull live context in, review it, optionally
-push findings back out. Use this skill whenever asked to review a pull
-request, e.g. "review PR #1 in Roli24/mcp-skill-demo" or "check PR #3
-for security issues."
+push findings back out. Invoked as `/pr-review <PR reference>`, e.g.
+`/pr-review PR #1` — or just ask to review a PR in plain language.
 
 ## 1. Get live context via the pr-github connector
 
-Do not ask the user to paste a diff. Use the `pr-github` connector's
+Do not ask the user to paste a diff. Use the `pr-github` MCP server's
 tools to fetch, for the referenced PR:
 
 - `get_pr_diff(owner, repo, pr_number)` — the full diff
 - `get_pr_checks(owner, repo, pr_number)` — the latest CI / check-run status
 
-If the `pr-github` connector isn't available, say so and stop — this
+If the `pr-github` MCP server isn't available, say so and stop — this
 skill depends on it for live data, it does not work from memory or a
 stale description of the PR.
 

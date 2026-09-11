@@ -87,9 +87,9 @@ Railway, Fly.io, your own VPS. Same env vars either way.)
 ## 3. Upload the skill
 
 1. claude.ai → **Settings → Capabilities → Skills → Create/Upload**.
-2. Zip [`skill/pr-review/`](./skill/pr-review/) (its `SKILL.md`) and
-   upload it, or paste the file's contents into the skill editor if
-   claude.ai offers one.
+2. Zip [`.claude/skills/pr-review/`](./.claude/skills/pr-review/) (its
+   `SKILL.md`) and upload it, or paste the file's contents into the
+   skill editor if claude.ai offers one.
 3. It should now show up as an available skill in a chat.
 
 ## 4. Run it
