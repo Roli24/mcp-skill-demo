@@ -1,6 +1,6 @@
-"""GitHub REST calls used by remote_server.py's three MCP tools. Kept
-in its own module so the HTTP-transport wiring in remote_server.py
-stays focused on serving/auth concerns, not GitHub's API shape.
+"""GitHub REST calls used by server.py's three MCP tools. Kept in its
+own module so server.py stays focused on the stdio/MCP wiring, not
+GitHub's API shape.
 """
 
 import requests

@@ -10,7 +10,7 @@ pull request end to end: pull live context in, review it, optionally
 push findings back out. Invoked as `/pr-review <PR reference>`, e.g.
 `/pr-review PR #1` — or just ask to review a PR in plain language.
 
-## 1. Get live context via the pr-github connector
+## 1. Get live context via the pr-github MCP server
 
 Do not ask the user to paste a diff. Use the `pr-github` MCP server's
 tools to fetch, for the referenced PR:

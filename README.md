@@ -3,7 +3,8 @@
 **Claude reviews a real GitHub pull request for a real security bug —
 live, out loud, with nothing pasted in by hand.** This repo is the
 whole thing: the buggy code, the MCP server that gives Claude eyes on
-GitHub, and the Skill that tells it what to actually check for.
+GitHub, and the Skill that tells it what to actually check for. Runs
+entirely in Claude Code — no hosting, no browser, no third-party server.
 
 ▶️ **[See the bug it catches: PR #1](https://github.com/Roli24/mcp-skill-demo/pull/1)**
 
@@ -24,8 +25,8 @@ Two pieces, doing two different jobs:
 ```mermaid
 flowchart LR
     GH[("GitHub<br/>PR #1 · CI checks")]
-    MCP["MCP server<br/><i>your code, 3 tools</i>"]
-    C["Claude<br/><i>the session</i>"]
+    MCP["pr-github MCP server<br/><i>your code, 3 tools</i>"]
+    C["Claude Code<br/><i>the session</i>"]
     SK["pr-review Skill<br/><i>the checklist</i>"]
 
     GH -- "diff · CI status" --> MCP
@@ -38,6 +39,22 @@ flowchart LR
 The MCP server never decides *what's wrong* with the code — it just
 fetches and posts. The Skill never touches GitHub directly — it just
 reasons. Neither one does the whole job alone.
+
+## Where the two files actually live
+
+```
+.mcp.json                        <- Claude Code reads this on startup;
+                                     declares & launches the MCP server
+mcp-server/server.py             <- the server: 3 tools, stdio transport
+mcp-server/github_tools.py       <- the GitHub REST calls those tools use
+.claude/skills/pr-review/SKILL.md <- auto-discovered; registers /pr-review
+```
+
+`.mcp.json` says *what's available* (spawns `server.py`, gets back
+`get_pr_diff` / `get_pr_checks` / `post_review_comment`). `SKILL.md`
+says *what to do with it* (the checklist, run when you type
+`/pr-review`). They never talk to each other directly — they meet
+inside Claude's own reasoning.
 
 ## The bug it finds
 
@@ -53,19 +70,23 @@ missing admin-role check to "a follow-up ticket." Both are exactly the
 kind of thing that's easy to wave through in a fast review and easy
 for a checklist to catch every time.
 
-## Run it yourself, two ways
+## Run it yourself
 
-| | **Claude Code** (local) | **claude.ai** (remote) |
-|---|---|---|
-| Transport | stdio — a subprocess Claude Code spawns | Streamable HTTP — a server you deploy |
-| Where your GitHub token lives | Your machine, never leaves it | Your deployed host, never sent to claude.ai |
-| Auth claude.ai/Claude Code holds | — (it's local) | A separate OAuth client secret, not your GitHub token |
-| Setup | `.mcp.json`, already committed | Deploy + connector + skill upload |
-| Guide | [`RUNBOOK.md`](./RUNBOOK.md) | [`CLAUDE_AI_SETUP.md`](./CLAUDE_AI_SETUP.md) |
+Full steps, including the exact `.mcp.json` field-by-field, are in
+[`RUNBOOK.md`](./RUNBOOK.md). Short version:
 
-Both paths run the exact same three tools and the exact same
-`SKILL.md` — see [`mcp-server/github_tools.py`](./mcp-server/github_tools.py),
-shared by both transports so they can't drift into different behavior.
+```bash
+git clone https://github.com/Roli24/mcp-skill-demo && cd mcp-skill-demo
+cd mcp-server && python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt && cd ..
+
+export GH_PAT="your-fine-grained-github-pat"   # Contents:Read, PRs:Read&write
+claude   # approve the pr-github MCP server when prompted
+
+# inside the session:
+/pr-review PR #1
+/pr-review PR #1 --comment   # posts findings back to the PR
+```
 
 ## Why bother wiring this up
 
@@ -77,32 +98,29 @@ shared by both transports so they can't drift into different behavior.
   API. A bug in the Skill can't reach further than that.
 - **The loop closes** — the same server that pulled the PR in posts
   findings back as inline comments. Starts and ends on GitHub.
-- **One codebase, two surfaces** — `github_tools.py` doesn't care
-  whether it's called over stdio or HTTP.
+- **Your token never leaves your machine** — no hosted MCP endpoint,
+  no third party ever sees it.
 
 ## Where it actually falls short
 
-- **A credential still has to live somewhere** — locally, that's your
-  shell env; remotely, that's a deployed host you now maintain. Either
-  way it needs scoping and rotation like any secret.
+- **A credential still has to live somewhere** — your shell env, in
+  this case. It needs scoping and rotation like any secret.
 - **Cost and latency scale per call** — fine for reviewing one PR on
   camera, not a drop-in replacement for a CI bot reviewing hundreds.
 - **First pass, not sign-off** — it can miss a real bug or flag a
   fine line as risky. A human still holds the merge button.
-- **You own what you deploy** — the remote path adds a real OAuth
-  server (`remote_server.py`) that you're now responsible for keeping
-  patched, not just calling.
+- **Only works where Claude Code runs** — it's a local subprocess, so
+  it needs a machine with Python and this repo checked out.
 - **More moving parts than a plain prompt** — worth it for a
   repeatable workflow, overkill for a one-off question.
 
 ## Repo layout
 
 ```
-app.py, test_app.py            the buggy demo API (main = safe, feature/admin-user-search = bug)
-.claude/skills/pr-review/       the Skill — same file, both paths
-mcp-server/github_tools.py      shared GitHub REST logic
-mcp-server/server.py            stdio transport (Claude Code)
-mcp-server/remote_server.py     Streamable HTTP + OAuth 2.1 (claude.ai)
-.mcp.json                       declarative local registration
-RUNBOOK.md / CLAUDE_AI_SETUP.md exact steps for each path
+app.py, test_app.py             the buggy demo API (main = safe, feature/admin-user-search = bug)
+.claude/skills/pr-review/       the Skill
+mcp-server/github_tools.py      GitHub REST logic
+mcp-server/server.py            the MCP server (stdio transport)
+.mcp.json                       declarative registration, committed
+RUNBOOK.md                      exact recording steps
 ```

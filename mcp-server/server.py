@@ -7,9 +7,6 @@ environment — it is never sent to a third-party hosted MCP endpoint.
 Local smoke test:     GH_PAT=... python3 server.py
 Register with Claude: see ../RUNBOOK.md (Step 3) -- registration is
                        declarative via ../.mcp.json, committed in this repo.
-
-For a version reachable from claude.ai (a browser app that can't spawn
-a local process), see remote_server.py instead.
 """
 
 import os
