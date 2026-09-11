@@ -70,22 +70,6 @@ def login():
     return jsonify(id=row["id"], username=row["username"], is_admin=bool(row["is_admin"]))
 
 
-@app.get("/admin/users/search")
-def search_users():
-    """Admin tool: search users by a substring of their username.
-
-    NOTE: this ships in the PR without an is_admin check yet -- that's
-    tracked in a follow-up ticket, out of scope for this PR.
-    """
-    query = request.args.get("q", "")
-
-    db = get_db()
-    sql = "SELECT id, username, is_admin FROM users WHERE username LIKE '%" + query + "%'"
-    rows = db.execute(sql).fetchall()
-
-    return jsonify([dict(row) for row in rows])
-
-
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)

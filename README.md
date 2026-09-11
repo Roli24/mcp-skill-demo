@@ -2,11 +2,14 @@
 
 **Claude reviews a real GitHub pull request for a real security bug —
 live, out loud, with nothing pasted in by hand.** This repo is the
-whole thing: the buggy code, the MCP server that gives Claude eyes on
-GitHub, and the Skill that tells it what to actually check for. Runs
-entirely in Claude Code — no hosting, no browser, no third-party server.
+whole thing: an MCP server that gives Claude eyes on GitHub, a Skill
+that tells it what to actually check for, and a one-command script
+that opens a fresh buggy PR for it to catch. Runs entirely in Claude
+Code — no hosting, no browser, no third-party server.
 
-▶️ **[See the bug it catches: PR #1](https://github.com/Roli24/mcp-skill-demo/pull/1)**
+`main` is deliberately clean and safe — see [`make-demo-pr.sh`](./make-demo-pr.sh)
+below for how the bug gets introduced fresh each time, in its own PR,
+instead of living permanently in the default branch.
 
 ---
 
@@ -24,7 +27,7 @@ Two pieces, doing two different jobs:
 
 ```mermaid
 flowchart LR
-    GH[("GitHub<br/>PR #1 · CI checks")]
+    GH[("GitHub<br/>a PR · CI checks")]
     MCP["pr-github MCP server<br/><i>your code, 3 tools</i>"]
     C["Claude Code<br/><i>the session</i>"]
     SK["pr-review Skill<br/><i>the checklist</i>"]
@@ -58,8 +61,8 @@ inside Claude's own reasoning.
 
 ## The bug it finds
 
-[`app.py`](./app.py)'s `search_users()` endpoint (added in PR #1)
-builds SQL with string concatenation:
+`./make-demo-pr.sh` opens a PR that adds a `search_users()` endpoint to
+[`app.py`](./app.py), building SQL with string concatenation:
 
 ```python
 sql = "SELECT id, username, is_admin FROM users WHERE username LIKE '%" + query + "%'"
@@ -106,12 +109,15 @@ git clone https://github.com/Roli24/mcp-skill-demo && cd mcp-skill-demo
 cd mcp-server && python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt && cd ..
 
+gh auth login                # once, if you haven't
+./make-demo-pr.sh            # opens a fresh PR with the bug, prints its number
+
 export GH_PAT="your-fine-grained-github-pat"   # Contents:Read, PRs:Read&write
 claude   # approve the pr-github MCP server when prompted
 
-# inside the session:
-/pr-review PR #1
-/pr-review PR #1 --comment   # posts findings back to the PR
+# inside the session (use the PR number make-demo-pr.sh printed):
+/pr-review PR #<N>
+/pr-review PR #<N> --comment   # posts findings back to the PR
 ```
 
 > Windows note: the venv activation step is
@@ -152,7 +158,8 @@ claude   # approve the pr-github MCP server when prompted
 ## Repo layout
 
 ```
-app.py, test_app.py             the buggy demo API (main = safe, feature/admin-user-search = bug)
+app.py, test_app.py             the demo API -- safe on main, always
+make-demo-pr.sh                 opens a fresh PR that adds the bug
 .claude/skills/pr-review/       the Skill
 mcp-server/github_tools.py      GitHub REST logic
 mcp-server/server.py            the MCP server (stdio transport)

@@ -2,33 +2,36 @@
 
 Repo: `~/mcp-skill-demo` · GitHub account: `github.com/Roli24`
 
-Do the GitHub push once *before* recording (dead air while `gh` prompts
-for auth is not fun to watch); record everything from Step 3 onward live.
+`main` is always clean and safe — no bug lives there permanently. Each
+recording gets a *fresh* buggy PR via `make-demo-pr.sh`, so the demo is
+always reviewing something real and unmerged, never a stale fixture.
+
+Do Steps 1–2 once *before* recording (dead air while `gh` prompts for
+auth, or while a PR opens, is not fun to watch); record everything
+from Step 3 onward live.
 
 ---
 
-## Step 1 — Push the repo to GitHub (do this before recording)
+## Step 1 — Push the repo to GitHub (one-time, do this before recording)
 
 ```bash
 cd ~/mcp-skill-demo
 gh auth login   # once, if you haven't
-gh repo create Roli24/mcp-skill-demo --public --source=. --remote=origin --push
+git push -u origin main   # only needed the very first time
 ```
 
-## Step 2 — Open the PR (do this before recording)
+## Step 2 — Open a fresh demo PR (do this before each recording)
 
 ```bash
-git push -u origin feature/admin-user-search
-
-gh pr create \
-  --title "Add admin user search endpoint" \
-  --body "Adds GET /admin/users/search so support staff can look up an \
-account by partial username. Admin-role check is tracked in a follow-up \
-ticket — out of scope here." \
-  --base main --head feature/admin-user-search
+./make-demo-pr.sh
 ```
 
-Note the PR number `gh pr create` prints (e.g. `#1`) — you'll say it on camera.
+This checks out a new branch off `main`, adds the vulnerable
+`search_users` endpoint, pushes it, and opens a PR — printing its
+number at the end (e.g. `#4`). **Note that number — you'll say it on
+camera and use it in Steps 4–5.** Running it again later opens another
+fresh PR on a new branch; old ones don't need cleaning up before a new
+run, though see *Cleanup* at the bottom for tidying up after you're done.
 
 ---
 
@@ -95,10 +98,11 @@ GH_PAT="$GH_PAT" -- ~/mcp-skill-demo/mcp-server/venv/bin/python3
 
 ## Step 4 — Ask Claude to pull PR context via MCP (ON CAMERA)
 
-Inside `claude` (run it from `~/mcp-skill-demo`):
+Inside `claude` (run it from `~/mcp-skill-demo`), using the PR number
+`make-demo-pr.sh` printed in Step 2:
 
 ```
-what's the status of PR #1 in Roli24/mcp-skill-demo — show me the diff and any CI checks
+what's the status of PR #<N> in Roli24/mcp-skill-demo — show me the diff and any CI checks
 ```
 
 Claude calls `get_pr_diff` / `get_pr_checks` on the `pr-github` server —
@@ -112,7 +116,7 @@ This repo ships its own skill at `.claude/skills/pr-review/SKILL.md` —
 open that file on screen for a few seconds first before invoking it:
 
 ```
-/pr-review PR #1
+/pr-review PR #<N>
 ```
 
 Expected: the skill pulls the diff via the MCP server (Step 3/4's
@@ -124,7 +128,7 @@ is the payoff shot.
 Optional, to show it posting back to GitHub:
 
 ```
-/pr-review PR #1 --comment
+/pr-review PR #<N> --comment
 ```
 
 This calls `post_review_comment` — the third tool — using the *same*
@@ -139,6 +143,10 @@ direction, and no token handed to anyone but GitHub itself.
 
 ```bash
 claude mcp remove pr-github     # revoke the local MCP registration
+
+# close out the demo PR make-demo-pr.sh opened and delete its branch:
+gh pr close <N> --delete-branch
+git checkout main
 ```
 
 Then go to GitHub → Settings → Developer settings → revoke the
