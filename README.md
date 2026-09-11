@@ -70,6 +70,32 @@ missing admin-role check to "a follow-up ticket." Both are exactly the
 kind of thing that's easy to wave through in a fast review and easy
 for a checklist to catch every time.
 
+## Install Claude Code
+
+Skip this if `claude --version` already works. Otherwise:
+
+**macOS / Linux / WSL** — native installer, no Node.js required:
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+macOS alternative, if you prefer Homebrew:
+```bash
+brew install claude-code
+```
+
+**Windows** — native installer, in PowerShell (no WSL, Node, or npm needed):
+```powershell
+irm https://claude.ai/install.ps1 | iex
+```
+
+Either way, confirm it worked:
+```bash
+claude --version
+```
+
+You'll also need Python 3 and `git` on your PATH — this demo's MCP
+server is a Python script, and you'll be cloning the repo below.
+
 ## Run it yourself
 
 Full steps, including the exact `.mcp.json` field-by-field, are in
@@ -87,6 +113,15 @@ claude   # approve the pr-github MCP server when prompted
 /pr-review PR #1
 /pr-review PR #1 --comment   # posts findings back to the PR
 ```
+
+> Windows note: the venv activation step is
+> `mcp-server\venv\Scripts\activate` (PowerShell/cmd) instead of
+> `source mcp-server/venv/bin/activate`, and set the token with
+> `$env:GH_PAT="your-token"` instead of `export`. `.mcp.json`'s
+> `${CLAUDE_PROJECT_DIR:-.}/mcp-server/venv/bin/python3` path assumes a
+> Unix-style venv layout — on Windows that's
+> `mcp-server/venv/Scripts/python.exe`; adjust `.mcp.json` accordingly
+> if you're recording on Windows rather than macOS/Linux.
 
 ## Why bother wiring this up
 
