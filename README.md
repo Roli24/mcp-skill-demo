@@ -1,15 +1,14 @@
 # mcp-skill-demo
 
-**Claude reviews a real GitHub pull request for a real security bug —
-live, out loud, with nothing pasted in by hand.** This repo is the
-whole thing: an MCP server that gives Claude eyes on GitHub, a Skill
-that tells it what to actually check for, and a one-command script
-that opens a fresh buggy PR for it to catch. Runs entirely in Claude
-Code — no hosting, no browser, no third-party server.
+An MCP server and a Skill working together in Claude Code: Claude reads
+a real GitHub pull request, reviews it against a fixed checklist, and
+can post its findings back as review comments — no diff pasted in by
+hand, no manual copy-paste in either direction.
 
-`main` is deliberately clean and safe — see [`make-demo-pr.sh`](./make-demo-pr.sh)
-below for how the bug gets introduced fresh each time, in its own PR,
-instead of living permanently in the default branch.
+`main` is always clean and safe. [`make-demo-pr.sh`](./make-demo-pr.sh)
+opens a fresh branch and PR that introduces a real bug, so there's
+always a live, unmerged PR to review instead of a permanent fixture
+baked into the default branch.
 
 ---
 
@@ -99,34 +98,62 @@ claude --version
 You'll also need Python 3 and `git` on your PATH — this demo's MCP
 server is a Python script, and you'll be cloning the repo below.
 
-## Run it yourself
-
-Full steps, including the exact `.mcp.json` field-by-field
+## Set up
 
 ```bash
 git clone https://github.com/Roli24/mcp-skill-demo && cd mcp-skill-demo
+
 cd mcp-server && python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt && cd ..
+```
 
-gh auth login                # once, if you haven't
-./make-demo-pr.sh            # opens a fresh PR with the bug, prints its number
+Generate a fine-grained GitHub PAT (Settings → Developer settings →
+Personal access tokens → Fine-grained), scoped to just this repo, with
+`Contents: Read` and `Pull requests: Read and write`. `.mcp.json`
+expands it from your shell at launch — the literal token is never
+written to disk:
 
-export GH_PAT="your-fine-grained-github-pat"   # Contents:Read, PRs:Read&write
+```bash
+export GH_PAT="your-fine-grained-github-pat"
+```
+
+Open a fresh demo PR (requires `gh auth login` once, if you haven't):
+
+```bash
+./make-demo-pr.sh   # prints the PR number, e.g. #4
+```
+
+## Run it
+
+```bash
 claude   # approve the pr-github MCP server when prompted
+```
 
-# inside the session (use the PR number make-demo-pr.sh printed):
+Inside the session:
+
+```
+what's the status of PR #<N> in Roli24/mcp-skill-demo — show me the diff and any CI checks
 /pr-review PR #<N>
 /pr-review PR #<N> --comment   # posts findings back to the PR
 ```
 
-> Windows note: the venv activation step is
-> `mcp-server\venv\Scripts\activate` (PowerShell/cmd) instead of
-> `source mcp-server/venv/bin/activate`, and set the token with
-> `$env:GH_PAT="your-token"` instead of `export`. `.mcp.json`'s
-> `${CLAUDE_PROJECT_DIR:-.}/mcp-server/venv/bin/python3` path assumes a
-> Unix-style venv layout — on Windows that's
-> `mcp-server/venv/Scripts/python.exe`; adjust `.mcp.json` accordingly
-> if you're recording on Windows rather than macOS/Linux.
+`claude mcp list` confirms `pr-github` is connected with exactly 3
+tools. The first command shows Claude pulling live context via
+`get_pr_diff` / `get_pr_checks`; `/pr-review` runs the skill's
+checklist against that diff and reports the SQL injection and missing
+auth check; `--comment` calls `post_review_comment` to post the
+findings back to the PR itself.
+
+## Cleanup
+
+```bash
+claude mcp remove pr-github          # revoke the local MCP registration
+gh pr close <N> --delete-branch      # close the demo PR, delete its branch
+git checkout main
+```
+
+Then revoke the fine-grained PAT you generated above (GitHub →
+Settings → Developer settings).
 
 ## Why bother wiring this up
 
@@ -145,8 +172,8 @@ claude   # approve the pr-github MCP server when prompted
 
 - **A credential still has to live somewhere** — your shell env, in
   this case. It needs scoping and rotation like any secret.
-- **Cost and latency scale per call** — fine for reviewing one PR on
-  camera, not a drop-in replacement for a CI bot reviewing hundreds.
+- **Cost and latency scale per call** — fine for reviewing one PR,
+  not a drop-in replacement for a CI bot reviewing hundreds.
 - **First pass, not sign-off** — it can miss a real bug or flag a
   fine line as risky. A human still holds the merge button.
 - **Only works where Claude Code runs** — it's a local subprocess, so

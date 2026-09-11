@@ -2,9 +2,9 @@
 # Creates a fresh demo PR: a new branch off main, with a deliberate
 # SQL-injection + missing-auth-check bug, pushed and opened as a PR.
 #
-# main stays clean and safe on purpose -- run this once, right before
-# you record, so /pr-review always has a real, live, unmerged PR to
-# review. Requires `gh auth login` already done (see README.md).
+# main stays clean and safe on purpose -- run this whenever you want a
+# real, live, unmerged PR for /pr-review to catch. Requires
+# `gh auth login` already done (see README.md).
 #
 # Usage: ./make-demo-pr.sh
 # Prints the PR number to use with /pr-review PR #<N>.
@@ -64,6 +64,6 @@ echo
 echo "PR opened: $PR_URL"
 echo "Run: /pr-review PR #$(basename "$PR_URL")"
 echo
-echo "Cleanup after recording:"
+echo "Cleanup:"
 echo "  gh pr close $(basename "$PR_URL") --delete-branch"
 echo "  git checkout main && git branch -D $BRANCH"

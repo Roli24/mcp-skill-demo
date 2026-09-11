@@ -5,7 +5,7 @@ github_tools.py. The GitHub token lives only in *this process's*
 environment — it is never sent to a third-party hosted MCP endpoint.
 
 Local smoke test:     GH_PAT=... python3 server.py
-
+Registration:         declarative via ../.mcp.json, committed in this repo.
 """
 
 import os
