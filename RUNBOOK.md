@@ -75,27 +75,34 @@ Claude uses the GitHub MCP server's tools to fetch the PR diff and CI status
 live — no local checkout needed. Narrate: *this is the "server" half of MCP —
 it's giving Claude eyes on GitHub's live data.*
 
-## Step 5 — Run the code-review skill against the PR (ON CAMERA)
+## Step 5 — Run the pr-review skill against the PR (ON CAMERA)
+
+This repo ships its own skill at `.claude/skills/pr-review/SKILL.md` —
+open that file on screen for a few seconds first ("here's the checklist
+Claude is about to run") before invoking it:
 
 ```
-/code-review PR #1
+/pr-review PR #1
 ```
 
-Expected: the skill flags the string-concatenated SQL in `search_users`
-(SQL injection) as a correctness/security finding, and should also flag
-the missing admin/auth check on that endpoint. Let it finish and read the
-findings out loud on camera — this is the payoff shot.
+Expected: the skill's own instructions tell Claude to pull the diff via
+the GitHub MCP server (Step 3/4's connection, not a local checkout), then
+flag the string-concatenated SQL in `search_users` (SQL injection) as a
+correctness/security finding, and also flag the missing admin/auth check
+on that endpoint. Let it finish and read the findings out loud on
+camera — this is the payoff shot.
 
 Optional, if you want to show it posting back to GitHub:
 
 ```
-/code-review PR #1 --comment
+/pr-review PR #1 --comment
 ```
 
-This posts the findings as inline PR review comments — using the *same*
-GitHub MCP connection from Step 3. This is the "end-to-end" beat: MCP
-supplied the live context in, and the same server pushes results back out,
-all inside one Claude Code session, no manual copy-paste either direction.
+Per the skill's step 4, this posts the findings as inline PR review
+comments using the *same* GitHub MCP connection from Step 3. This is the
+"end-to-end" beat: MCP supplied the live context in, the skill decided
+what to say, and the same server pushes the result back out — all inside
+one Claude Code session, no manual copy-paste either direction.
 
 ---
 

@@ -7,7 +7,9 @@ working together in Claude Code.
   the login query is parameterized.
 - **`feature/admin-user-search`** — a PR branch that adds an admin
   "search users" endpoint. It contains a deliberate SQL-injection bug,
-  used to show the `/code-review` skill catching it, with the **GitHub MCP
-  server** supplying Claude live PR/CI context.
+  used to show the **`pr-review` skill** (see
+  [`.claude/skills/pr-review/SKILL.md`](./.claude/skills/pr-review/SKILL.md))
+  catching it, with the **GitHub MCP server** supplying Claude live PR/CI
+  context and posting findings back.
 
 See [`RUNBOOK.md`](./RUNBOOK.md) for the exact steps to record.
