@@ -66,8 +66,12 @@ declarative — no `claude mcp add` needed:
 {
   "mcpServers": {
     "pr-github": {
-      "command": "python3",
-      "args": ["mcp-server/server.py"],
+      // Claude Code spawns MCP servers with no defined cwd, so relative
+      // paths never resolve -- always anchor to ${CLAUDE_PROJECT_DIR}.
+      // Command points at the *venv's* python3, since that's where
+      // requirements.txt actually got installed in Step 3.
+      "command": "${CLAUDE_PROJECT_DIR:-.}/mcp-server/venv/bin/python3",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcp-server/server.py"],
       "env": { "GH_PAT": "${GH_PAT}" }   // expanded from your shell, never written to disk
     }
   }
