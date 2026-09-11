@@ -1,8 +1,9 @@
 """Tiny demo storefront API.
 
-A deliberately small Flask app used to demo MCP + Skills in Claude Code:
-  - GitHub MCP server lets Claude pull live PR/issue/CI context from GitHub.
-  - The /code-review skill reviews a PR's diff for correctness/security issues.
+A deliberately small Flask app used to demo a claude.ai Connector +
+Skill working together:
+  - The pr-github connector lets Claude pull live PR/CI context from GitHub.
+  - The pr-review skill reviews a PR's diff for correctness/security issues.
 
 Run: python app.py
 """

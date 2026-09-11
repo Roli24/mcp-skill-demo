@@ -5,22 +5,23 @@ description: Reviews an open GitHub pull request for correctness and security is
 
 # PR Security Review
 
-Orchestrates the local `pr-github` MCP server and this checklist to
-review a pull request end to end: pull live context in, review it,
-optionally push findings back out. Invoked as `/pr-review <PR
-reference>`, e.g. `/pr-review PR #1` or `/pr-review PR #1 --comment`.
+Orchestrates the `pr-github` connector and this checklist to review a
+pull request end to end: pull live context in, review it, optionally
+push findings back out. Use this skill whenever asked to review a pull
+request, e.g. "review PR #1 in Roli24/mcp-skill-demo" or "check PR #3
+for security issues."
 
-## 1. Get live context via the pr-github MCP server
+## 1. Get live context via the pr-github connector
 
-Do not ask the user to paste a diff. Use the local `pr-github` MCP
-server's tools to fetch, for the referenced PR:
+Do not ask the user to paste a diff. Use the `pr-github` connector's
+tools to fetch, for the referenced PR:
 
 - `get_pr_diff(owner, repo, pr_number)` — the full diff
 - `get_pr_checks(owner, repo, pr_number)` — the latest CI / check-run status
 
-If the `pr-github` server isn't connected, say so and stop — this skill
-depends on it for live data, it does not work from memory or a stale
-local checkout.
+If the `pr-github` connector isn't available, say so and stop — this
+skill depends on it for live data, it does not work from memory or a
+stale description of the PR.
 
 ## 2. Review the diff against this checklist
 
@@ -49,8 +50,10 @@ Rank findings most severe first. For each one, cite the exact
 `quantity=-5` does X"), and suggest the minimal fix. Never approve or
 merge the PR yourself — that decision stays with a human reviewer.
 
-## 4. Post back to GitHub (only if asked, e.g. `--comment`)
+## 4. Post back to GitHub (only if asked)
 
-Call `post_review_comment(owner, repo, pr_number, path, line, body)`
+If the user asks to post, comment, or leave the findings on the PR,
+call `post_review_comment(owner, repo, pr_number, path, line, body)`
 once per finding to leave an inline comment on its diff line. Confirm
 in chat what was posted, including the comment URL each call returns.
+Otherwise, just report the findings in chat and stop there.

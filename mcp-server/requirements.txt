@@ -1,2 +1,4 @@
 mcp>=1.2.0,<2
 requests>=2.31
+uvicorn>=0.30
+starlette>=0.37
