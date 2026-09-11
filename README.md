@@ -101,8 +101,7 @@ server is a Python script, and you'll be cloning the repo below.
 
 ## Run it yourself
 
-Full steps, including the exact `.mcp.json` field-by-field, are in
-[`RUNBOOK.md`](./RUNBOOK.md). Short version:
+Full steps, including the exact `.mcp.json` field-by-field
 
 ```bash
 git clone https://github.com/Roli24/mcp-skill-demo && cd mcp-skill-demo
@@ -164,5 +163,4 @@ make-demo-pr.sh                 opens a fresh PR that adds the bug
 mcp-server/github_tools.py      GitHub REST logic
 mcp-server/server.py            the MCP server (stdio transport)
 .mcp.json                       declarative registration, committed
-RUNBOOK.md                      exact recording steps
 ```
