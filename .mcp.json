@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "pr-github": {
+      "command": "python3",
+      "args": ["mcp-server/server.py"],
+      "env": {
+        "GH_PAT": "${GH_PAT}"
+      }
+    }
+  }
+}

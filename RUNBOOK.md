@@ -59,13 +59,35 @@ Personal access tokens → Fine-grained), scoped to just this repo, with
 **Redact this token in the recording** — either blur it or type it into an
 env var off-screen and reference `$GH_PAT` on screen instead.
 
+This repo already commits [`.mcp.json`](./.mcp.json), so the wiring is
+declarative — no `claude mcp add` needed:
+
+```jsonc
+{
+  "mcpServers": {
+    "pr-github": {
+      "command": "python3",
+      "args": ["mcp-server/server.py"],
+      "env": { "GH_PAT": "${GH_PAT}" }   // expanded from your shell, never written to disk
+    }
+  }
+}
+```
+
 ```bash
 export GH_PAT="ghp_xxx"   # do this off camera / blur it
-
-claude mcp add pr-github \
-  -e GH_PAT="$GH_PAT" \
-  -- python3 ~/mcp-skill-demo/mcp-server/server.py
+cd ~/mcp-skill-demo
+claude
 ```
+
+On first launch Claude Code prompts: *"This project wants to run these
+MCP servers — pr-github. Approve?"* — approve it on camera. That
+prompt is the whole point: nothing runs without you seeing what it is
+first.
+
+(Equivalent one-off command, if you'd rather register it outside the
+repo instead of via `.mcp.json`: `claude mcp add pr-github -e
+GH_PAT="$GH_PAT" -- python3 ~/mcp-skill-demo/mcp-server/server.py`.)
 
 Verify it's connected, and that only your three tools are exposed:
 
